@@ -3,3 +3,4 @@
 *.iml
 
 markdownlint-cli2-codequality.json
+.venv
