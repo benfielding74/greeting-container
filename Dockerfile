@@ -32,5 +32,10 @@ COPY app app
 
 EXPOSE 8080
 
+# Production container health check to ensure the application is running and responding to requests.
+# This checks the server is up and responding to HTTP requests on port 8080.
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD ["/usr/local/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/').read()"]
+
 # The whole context was copied to /app, so the app package lives in /app/app.
 CMD ["gunicorn", "--chdir", "app", "--bind", "0.0.0.0:8080", "--workers", "2", "app:app"]
