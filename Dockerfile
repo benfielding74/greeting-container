@@ -1,4 +1,4 @@
-# This build stage uses the official Python image to install dependencies.
+# This build stage uses an official Python image to install dependencies.
 # Seperation of build and runtime stages allows for a smaller final image.
 # Updated sha to use the latest Python 3.12 slim image.
 FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 as builder
@@ -6,7 +6,7 @@ FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0
 # Removed apt-get update and install commands since the slim image already has the necessary build tools for Python packages.
 # Installing curl, vim create security vulnerabilities and is not needed for this build process.
 
-WORKDIR /app
+WORKDIR /
 
 # Copy only the required files in this build stage.
 COPY app/requirements.txt requirements.txt
@@ -33,9 +33,9 @@ COPY app app
 EXPOSE 8080
 
 # Production container health check to ensure the application is running and responding to requests.
-# This checks the server is up and responding to HTTP requests on port 8080.
+# This checks the /healthz endpoint returns a 200 status code.
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD ["/usr/local/bin/python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/').read()"]
+  CMD ["/usr/local/bin/python3", "-c", "import urllib.request; response=urllib.request.urlopen('http://localhost:8080/healthz'); assert response.code == 200"]
 
 # The whole context was copied to /app, so the app package lives in /app/app.
 CMD ["gunicorn", "--chdir", "app", "--bind", "0.0.0.0:8080", "--workers", "2", "app:app"]
