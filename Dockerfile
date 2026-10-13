@@ -1,7 +1,7 @@
 # This build stage uses an official Python image to install dependencies.
 # Seperation of build and runtime stages allows for a smaller final image.
 # Updated sha to use the latest Python 3.12 slim image.
-FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 as builder
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS builder
 
 # Removed apt-get update and install commands since the slim image already has the necessary build tools for Python packages.
 # Installing curl, vim create security vulnerabilities and is not needed for this build process.
@@ -15,7 +15,13 @@ COPY app/requirements.txt requirements.txt
 # The --no-cache-dir option prevents pip from caching the downloaded packages, which reduces the size of the final image.
 RUN pip install --no-cache-dir --target=/deps -r requirements.txt
 
-FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 as runtime
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS runtime
+
+LABEL org.opencontainers.image.source="https://github.com/benfielding74/greeting-container" \
+      org.opencontainers.image.title="sample-app" \
+      org.opencontainers.image.description="DWP assessment production container changes." \
+      org.opencontainers.image.version="1.0.3" \
+      org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
 
@@ -23,12 +29,12 @@ WORKDIR /app
 USER 1000:1000
 
 # Copy the dependencies from the builder stage to the runtime image.
-COPY --from=builder /deps /usr/local/lib/python3.12/site-packages
+COPY --chown=1000:000 --from=builder /deps /usr/local/lib/python3.12/site-packages
 
-COPY --from=builder /deps/bin /usr/local/bin
+COPY --chown=1000:1000 --from=builder /deps/bin /usr/local/bin
 
 # Copy only the application code to the runtime image.
-COPY app app
+COPY --chown=1000:1000 app app
 
 EXPOSE 8080
 
